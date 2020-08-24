@@ -3,94 +3,147 @@
 #include <util/delay.h>
 
 #include "utils.h"
-#include "combinePWM.h"
-#include "uart.h"
-#include "adc.h"
-#include "timer.h"
-#include "spi.h"
-
-const uint8_t ALL_INPUT = (0x00);
-const uint8_t ALL_PULLUP = (0xff);
+#include "Pwm.h"
+#include "Bluetooth.h"
+#include "Multimeter.h"
+#include "Scheduler.h"
+#include "ST7735Lcd.h"
+#include "Dac.h"
+#include "ST7735Lcd.h"
+#include "lib/hc165reg.hpp"
+#include "fonts/Font16x24.hpp"
 
 uint16_t i = 0;
 
-void ladder() {
-    static uint16_t level = 253;
-    static uint8_t state = 0;
+const uint16_t BORDER_GREEN = 0x65CC;
+const uint16_t BORDER_YELLOW = 0xE757;
 
-    switch(state) {
-        case 0: level = 253;
-        break;
-        case 1: level = 254;
-        break;
-        case 2: level = 255;
-        break;
-        case 3: level = 256;
-        break;
-        case 4: level = 257;
-        break;
-        case 5: level = 258;
-        break;
-        case 6: level = 257;
-        break;
-        case 7: level = 256;
-        break;
-        case 8: level = 255;
-        break;
-        case 9: level = 254;
-        break;
-    }
+void draw_lcd() {
+    ST7735Lcd::FillRectangle(2, 0, 156, 2, BORDER_GREEN);  
+    ST7735Lcd::FillRectangle(2, 39, 156, 2, BORDER_GREEN);       
+    ST7735Lcd::FillRectangle(2, 76, 156, 1, BORDER_GREEN);
 
-    pwm.setPWMch1(level + 0 * 256);
-    state++;
-    if(state >= 10) {
-        state = 0;
-    }
+    ST7735Lcd::FillRectangle(0, 0, 2, 77, BORDER_GREEN);
+    ST7735Lcd::FillRectangle(158, 0, 2, 77, BORDER_GREEN);
+
+    ST7735Lcd::FillRectangle(2, 77, 156, 1, BORDER_YELLOW);
+    ST7735Lcd::FillRectangle(2, 101, 156, 2, BORDER_YELLOW);
+    ST7735Lcd::FillRectangle(2, 126, 156, 2, BORDER_YELLOW);
+
+    ST7735Lcd::FillRectangle(0, 77, 2, 76, BORDER_YELLOW);
+    ST7735Lcd::FillRectangle(158, 77, 2, 76, BORDER_YELLOW);
+
+    uint16_t bitmap[Font16x24::GetCharPixelCount()];
+    Font16x24::RenderChar(3, 0, 0xF0FF, bitmap);
+    ST7735Lcd::DrawImage(10,10,16,24, bitmap);
 }
 
-void chainsaw() {
-    pwm.setPWMch1(i);
-    pwm.setPWMch0(i);
-    i++;
-}
+void dac_test(){
 
-void doit() {
-     chainsaw();
-     // ladder();
-     spi.sendData(i);
-     spi.sendData(i+1);
-     spi.sendData(i+2);
-     i++;
-     uint16_t voltage = adc.getVoltage();
+    static uint16_t i = 0;
+    uint16_t out = i;
+    if(bit::test(i, 4)) {
+        //out++;
+    }
+    
+    Dac::setVoltage(out);
+
+    i+=1;
+    
+
+/*
+     static uint16_t voltage = 0;
+     dac.set_values(voltage, 65535 - voltage);
+
      uint8_t digits[6];
-
      bin2bcd5(voltage, digits);
      for(int i = 0; i < 5; i++) {
-        digits[i] += '0';
+         digits[i] += '0';
      }
      digits[5] = 0;
 
+     voltage++;
 
      uart.sendString((char*)digits);
      uart.sendChar(13);
+    */
+}
+
+void print_value(uint16_t value) {
+ uint8_t digits[6];
+ bin2bcd5(value, digits);
+ bcd2ascii(digits);
+
+ for(int i = 0; i < 4; i++) {
+     if (digits[i] != '0') {
+        break;
+     }
+     digits[i] = ' ';
+ }
+
+ digits[5] = 0;
+ Bluetooth::sendString((char*)digits);
+}
+
+void adc_test() {
+    uint16_t voltage = (uint32_t)(Multimeter::getVoltage() - 29) * 2.5 * 1000 / 65536;
+    uint16_t current = Multimeter::getCurrent();
+    uint16_t time = Scheduler::getSystemTime();
+
+    Bluetooth::sendString("----------");
+    Bluetooth::sendChar(13);
+    print_value(voltage);
+    Bluetooth::sendString(" Volt");
+    Bluetooth::sendChar(13);
+    print_value(current);
+    Bluetooth::sendString(" Amp");
+    Bluetooth::sendChar(13);
+    print_value(time);
+    Bluetooth::sendString(" Sec");
+    Bluetooth::sendChar(13);
+}
+
+void calcMCULoad() {
+    uint8_t load = ((F_CPU - Scheduler::cycleCount) * 100 / F_CPU);
+    Scheduler::cycleCount = 0;
+
+    Bluetooth::sendString("**********");
+    Bluetooth::sendChar(13);
+    print_value(load);
+    Bluetooth::sendString(" % Load");
+    Bluetooth::sendChar(13);
+}
+
+typedef HC165Reg<Pd4, Pc1, Pc0> ButtonReg;
+
+void latch_test() {
+  uint8_t reg = ButtonReg::Read();
+  Bluetooth::sendChar(reg);
 }
 
 int main(void) {
-    DDRB = ALL_INPUT | TIMER1_OUTPUTS;
-    DDRC = ALL_INPUT | (1 << 1) | (1 << 0);
-    DDRD = ALL_INPUT | TIMER0_OUTPUTS | TIMER2_OUTPUTS;
-
-    PORTB = ALL_PULLUP & ~TIMER1_OUTPUTS;
-    PORTC = ALL_PULLUP & ~((1 << 1) | (1 << 0));
-    PORTD = ALL_PULLUP & ~(TIMER0_OUTPUTS | TIMER2_OUTPUTS);
+    Bluetooth::initialize();
+    Dac::initialize(); 
+    ButtonReg::initialize();
+    Pwm::initialize();
+    Multimeter::initialize();
+    ST7735Lcd::initialize();
+    Scheduler::initialize();
     
-    uart.initialize();
-    timer.initialize();
-    pwm.initialize();
-    adc.initialize();
-    spi.initialize();
-
     sei();
-    timer.addTask(100, &doit);
-    timer.run();
+    
+    Dac::enable();
+    Dac::setCurrent(0);
+    Dac::setVoltage(4094);
+        
+    //Lcd::FillRectangle(0, 0, 160, 128, ST7735_COLOR565(0,0,0));
+
+    //Scheduler::addTask(1000, &calcMCULoad);
+
+    Scheduler::addTask(200, &draw_lcd);
+    //Scheduler::addTask(100, &adc_test);
+    //Scheduler::addTask(100, &latch_test);
+    //Scheduler::addTask(10, &dac_test);
+    
+    Scheduler::run();
 }
