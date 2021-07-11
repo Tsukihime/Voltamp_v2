@@ -17,5 +17,4 @@ class Font {
         const uint8_t* charData(uint8_t index);
 };
 
-
 #endif /* FONT_H_ */

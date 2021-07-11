@@ -12,6 +12,4 @@ class VoltageSelector {
         static void setVoltageLevel(uint8_t level);
 };
 
-
-
 #endif /* VOLTAGESELECTOR_H_ */
