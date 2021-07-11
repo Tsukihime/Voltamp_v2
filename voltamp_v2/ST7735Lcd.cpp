@@ -2,15 +2,12 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/cpufunc.h>
+#include <avr/pgmspace.h>
 
 #include "lib/AVRPin.hpp"
 #include "ST7735Lcd.h"
 
 using namespace ST7735;
-
-using ResetPin = Pd7;
-using ChipSelectPin = Pb2;
-using DataCommandPin = Pb0;
 
 const uint8_t SPI_NO_INTERRUPT = (0 << SPIE);
 const uint8_t SPI_ENABLE = (1 << SPE);
@@ -20,6 +17,10 @@ const uint8_t SPI_MASTER = (1 << MSTR);
 const uint8_t SPI_PRESCALER_DIV4 = ((0 << SPR1) | (0 << SPR0));
 const uint8_t SPI_PRESCALER_DIV16 = ((0 << SPR1) | (1 << SPR0));
 const uint8_t SPI_DOUBLE_SPEED = (1 << SPI2X);
+
+using ResetPin = Pb0;
+using ChipSelectPin = Pb2;
+using DataCommandPin = Pd7;
 
 using MISO = Pb4;
 using MOSI = Pb3;
@@ -36,41 +37,30 @@ void ST7735Lcd::initialize(void) {
     ChipSelectPin::SetDirWrite();
     ResetPin::SetDirWrite();
     DataCommandPin::SetDirWrite();
-
     Init();
 }
 
-void ST7735Lcd::lcd_delay_ms(uint16_t ms) {
+void lcd_delay_ms(uint16_t ms) {
     while (ms--) {
         _delay_ms(1);
     }
 }
 
-void ST7735Lcd::Select() {
+void Select() {
     ChipSelectPin::Clear();
 }
 
-void ST7735Lcd::Unselect() {
+void Unselect() {
     ChipSelectPin::Set();
 }
 
-void ST7735Lcd::Reset() {
+void Reset() {
     ResetPin::Clear();
     lcd_delay_ms(5);
     ResetPin::Set();
 }
 
-void ST7735Lcd::WriteCommand(uint8_t cmd) {
-    DataCommandPin::Clear();
-    SendData(&cmd, 1);
-}
-
-void ST7735Lcd::WriteData(uint8_t* buff, size_t buff_size) {
-    DataCommandPin::Set();
-    SendData(buff, buff_size);
-}
-
-void ST7735Lcd::SendData(uint8_t* data, size_t size) {
+static void SendData(uint8_t* data, size_t size) {
     if (size == 0) {
         return;
     }
@@ -84,17 +74,43 @@ void ST7735Lcd::SendData(uint8_t* data, size_t size) {
     while(!(SPSR & (1 << SPIF)));
 }
 
+static void Fill(uint16_t color, size_t size) {
+    uint8_t b0 = color & 0xff;
+    uint8_t b1 = color >> 8;
+
+    SPDR = b0;
+    while(--size) {
+        while(!(SPSR & (1 << SPIF)));
+        SPDR = b1;
+        _NOP(); // magic - do code faster!!
+        while(!(SPSR & (1 << SPIF)));
+        SPDR = b0;
+    }
+    while(!(SPSR & (1 << SPIF)));
+    SPDR = b1;
+    while(!(SPSR & (1 << SPIF)));
+}
+
+void WriteCommand(uint8_t cmd) {
+    DataCommandPin::Clear();
+    SendData(&cmd, 1);
+}
+
+void WriteData(uint8_t* buff, size_t buff_size) {
+    DataCommandPin::Set();
+    SendData(buff, buff_size);
+}
+
 void ST7735Lcd::SetAddressWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
     // column address set
     WriteCommand(CASET);
-    uint8_t data[] = { 0x00, (uint8_t)(x0 + XSTART), 0x00, (uint8_t)(x1 + XSTART) };
-    WriteData(data, sizeof(data));
+    uint8_t datax[] = { 0x00, (uint8_t)(x0 + XSTART), 0x00, (uint8_t)(x1 + XSTART) };
+    WriteData(datax, sizeof(datax));
 
     // row address set
     WriteCommand(RASET);
-    data[1] = y0 + YSTART;
-    data[3] = y1 + YSTART;
-    WriteData(data, sizeof(data));
+    uint8_t datay[] = { 0x00, (uint8_t)(y0 + YSTART), 0x00, (uint8_t)(y1 + YSTART) };
+    WriteData(datay, sizeof(datay));
 
     // write to RAM
     WriteCommand(RAMWR);
@@ -111,8 +127,8 @@ void ST7735Lcd::ExecuteCommandList(const uint8_t *addr) {
 
         numArgs = *addr++;
         // If high bit set, delay follows args
-        ms = numArgs & DELAY;
-        numArgs &= ~DELAY;
+        ms = numArgs & DELAY_MASK;
+        numArgs &= ~DELAY_MASK;
         if(numArgs) {
             WriteData((uint8_t*)addr, numArgs);
             addr += numArgs;
@@ -139,7 +155,7 @@ void ST7735Lcd::FillScreen(uint16_t color) {
     FillRectangle(0, 0, WIDTH, HEIGHT, color);
 }
 
-void ST7735Lcd::FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+void ST7735Lcd::FillRectangle(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t color) {
     // clipping
     if((x >= WIDTH) || (y >= HEIGHT)) return;
     if((x + w - 1) >= WIDTH)  w = WIDTH - x;
@@ -148,41 +164,77 @@ void ST7735Lcd::FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, ui
     Select();
     SetAddressWindow(x, y, x+w-1, y+h-1);
 
-    size_t size = w * h;
-    uint8_t data[] = { (uint8_t) (color >> 8), (uint8_t) (color & 0xFF) };
-    while (--size > 0) {
-        WriteData(data, sizeof(data));
-    }
+    DataCommandPin::Set();
+    Fill(color, w * h);
 
     Unselect();
 }
 
-void ST7735Lcd::DrawPixel(uint16_t x, uint16_t y, uint16_t color) {
+void ST7735Lcd::DrawPixel(uint8_t x, uint8_t y, uint16_t color) {
     if((x >= WIDTH) || (y >= HEIGHT))
         return;
 
     Select();
-
     SetAddressWindow(x, y, x+1, y+1);
-    uint8_t data[] = { (uint8_t) (color >> 8), (uint8_t) (color & 0xFF) };
-    WriteData(data, sizeof(data));
-
+    WriteData((uint8_t*)&color, sizeof(color));
     Unselect();
 }
 
-void ST7735Lcd::DrawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data) {
+void ST7735Lcd::DrawImage(uint8_t x, uint8_t y, uint8_t w, uint8_t h, const uint16_t* data) {
     if((x >= WIDTH) || (y >= HEIGHT)) return;
     if((x + w - 1) >= WIDTH) return;
     if((y + h - 1) >= HEIGHT) return;
 
     Select();
     SetAddressWindow(x, y, x+w-1, y+h-1);
-    WriteData((uint8_t*)data, sizeof(uint16_t)*w*h);
+    WriteData((uint8_t*)data, sizeof(uint16_t) * w * h);
     Unselect();
+}
+
+void ST7735Lcd::DrawOneBitImage(uint8_t x, uint8_t y, uint8_t w, uint8_t h,
+                                uint16_t ForegroundColor, uint16_t BackgroundColor,
+                                const uint8_t* pgm_data) {
+    if((x >= WIDTH) || (y >= HEIGHT)) return;
+    if((x + w - 1) >= WIDTH) return;
+    if((y + h - 1) >= HEIGHT) return;
+
+    Select();
+    SetAddressWindow(x, y, x+w-1, y+h-1);
+
+    DataCommandPin::Set();
+
+    uint16_t pixel_count = w * h;
+    for(uint16_t i = 0; i < pixel_count; /* increment in inner for*/ ) {
+        uint8_t byte = pgm_read_byte(pgm_data++);
+
+        for(uint8_t k = 0; (k < 8) && (i < pixel_count); k++, i++) {
+            if(byte & 1) {
+                SendData((uint8_t*)&ForegroundColor, sizeof(ForegroundColor));
+            } else {
+                SendData((uint8_t*)&BackgroundColor, sizeof(BackgroundColor));
+            }
+            byte >>= 1;
+        }
+    }
+    Unselect();
+}
+
+void ST7735Lcd::DrawChar(uint8_t charcode, uint8_t x, uint8_t y, 
+                                 uint16_t ForegroundColor,
+                                 uint16_t BackgroundColor,
+                                 Font font) {
+    DrawOneBitImage(x, y, font.getWidth(), font.getHeight(),
+    ForegroundColor, BackgroundColor,
+    font.charData(charcode));
 }
 
 void ST7735Lcd::InvertColors(bool invert) {
     Select();
     WriteCommand(invert ? INVON : INVOFF);
     Unselect();
+}
+
+const uint16_t ST7735Lcd::rgbTo16BitColor(uint8_t r, uint8_t g, uint8_t b) {
+    const uint16_t color = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
+    return (color >> 8) | (color << 8);
 }

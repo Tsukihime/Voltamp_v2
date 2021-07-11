@@ -2,6 +2,7 @@
 #define ST7735_H_
 
 #include <string.h>
+#include "fonts/Font.h"
 
 //#define ALI18_DEFAULT          1 // AliExpress/eBay 1.8" display, default orientation
 #define ALI18_RIGHT            1 // AliExpress/eBay 1.8" display, rotate right
@@ -241,11 +242,7 @@ namespace ST7735 {
         const uint16_t WHITE   = 0xFFFF;
     }
 
-    constexpr uint16_t rgbTo16BitColor(uint8_t r, uint8_t g, uint8_t b) {
-        return (((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3));
-    }
-
-    const uint8_t DELAY = 0x80;
+    const uint8_t DELAY_MASK = 0x80;
 
     using namespace Commands;
     using namespace InitialConstants;
@@ -254,10 +251,10 @@ namespace ST7735 {
     static const uint8_t
     init_cmds1[] = {              // Init for 7735R, part 1 (red or green tab)
         15,                       // 15 commands in list:
-        SWRESET,          DELAY,  //  1: Software reset, 0 args, w/delay
+        SWRESET,          DELAY_MASK,  //  1: Software reset, 0 args, w/delay
         150,                      //     150 ms delay
-        SLPOUT ,          DELAY,  //  2: Out of sleep mode, 0 args, w/delay
-        255,                      //     500 ms delay
+        SLPOUT ,          DELAY_MASK,  //  2: Out of sleep mode, 0 args, w/delay
+        150,                      //     500 ms delay
         FRMCTR1,        3      ,  //  3: Frame rate ctrl - normal mode, 3 args:
         0x01, 0x2C, 0x2D,         //     Rate = fosc/(1x2+40) * (LINE+2C+2D)
         FRMCTR2,        3      ,  //  4: Frame rate control - idle mode, 3 args:
@@ -285,7 +282,7 @@ namespace ST7735 {
         0x0E,
         INVOFF ,        0      ,  // 13: Don't invert display, no args, no delay
         MADCTL ,        1      ,  // 14: Memory access control (directions), 1 arg:
-        ROTATION,          //     row addr/col addr, bottom to top refresh
+        ROTATION,                 //     row addr/col addr, bottom to top refresh
         COLMOD ,        1      ,  // 15: set color mode, 1 arg, no delay:
     0x05 },                       //     16-bit color
 
@@ -324,21 +321,14 @@ namespace ST7735 {
         0x2E, 0x2C, 0x29, 0x2D,
         0x2E, 0x2E, 0x37, 0x3F,
         0x00, 0x00, 0x02, 0x10,
-        NORON  ,           DELAY, //  3: Normal display on, no args, w/delay
+        NORON  ,           DELAY_MASK, //  3: Normal display on, no args, w/delay
         10,                       //     10 ms delay
-        DISPON ,           DELAY, //  4: Main screen turn on, no args w/delay
+        DISPON ,           DELAY_MASK, //  4: Main screen turn on, no args w/delay
     100 };                        //     100 ms delay
 }
 
 class ST7735Lcd {
     private:
-        static void lcd_delay_ms(uint16_t ms);
-        static void Select();
-        static void Unselect();
-        static void Reset();
-        static void WriteCommand(uint8_t cmd);
-        static void WriteData(uint8_t* buff, size_t buff_size);
-        static void SendData(uint8_t* data, size_t size);
         static void SetAddressWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
         static void ExecuteCommandList(const uint8_t *addr);
         static void Init();
@@ -347,10 +337,21 @@ class ST7735Lcd {
         static void initialize(void);
 
         static void FillScreen(uint16_t color);
-        static void FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
-        static void DrawPixel(uint16_t x, uint16_t y, uint16_t color);        
-        static void DrawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data);
+        static void FillRectangle(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t color);
+        static void DrawPixel(uint8_t x, uint8_t y, uint16_t color);        
+        static void DrawImage(uint8_t x, uint8_t y, uint8_t w, uint8_t h, const uint16_t* data);
+        static void DrawOneBitImage(uint8_t x, uint8_t y, uint8_t w, uint8_t h,
+                                    uint16_t ForegroundColor, uint16_t BackgroundColor,
+                                    const uint8_t* pgm_data);
+
+        static void DrawChar(uint8_t charcode, uint8_t x, uint8_t y,
+                                     uint16_t ForegroundColor,
+                                     uint16_t BackgroundColor,
+                                     Font font);
+
         static void InvertColors(bool invert);
+
+        static const uint16_t rgbTo16BitColor(uint8_t r, uint8_t g, uint8_t b);
 };
 
 #endif /* ST7735_H_ */

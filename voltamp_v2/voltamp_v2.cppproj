@@ -41,7 +41,8 @@
       </ToolNumber>
       <ToolName>Simulator</ToolName>
     </com_atmel_avrdbg_tool_simulator>
-    <avrtoolinterface />
+    <avrtoolinterface>
+    </avrtoolinterface>
     <custom>
       <ToolOptions xmlns="">
         <InterfaceProperties>
@@ -54,6 +55,23 @@
       </ToolNumber>
       <ToolName xmlns="">Custom Programming Tool</ToolName>
     </custom>
+    <CustomProgrammingToolCommand>
+    </CustomProgrammingToolCommand>
+    <com_atmel_avrdbg_tool_stk500>
+      <ToolOptions>
+        <InterfaceProperties>
+          <IspClock>125000</IspClock>
+        </InterfaceProperties>
+        <InterfaceName>ISP</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.stk500</ToolType>
+      <ToolNumber>
+      </ToolNumber>
+      <ToolName>STK500</ToolName>
+    </com_atmel_avrdbg_tool_stk500>
+    <avrtoolinterfaceclock>125000</avrtoolinterfaceclock>
+    <ResetRule>0</ResetRule>
+    <EraseKey />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -182,10 +200,52 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="fonts\Font16x24.hpp">
+    <Compile Include="Buttons.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="fonts\Font.hpp">
+    <Compile Include="Buttons.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Calibrator.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Calibrator.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font11x16.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font16x24.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font4x14.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts\Font6x8.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="lib\Scheduler.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="lib\Scheduler.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PowerSupplier.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PowerSupplier.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="screen\MainScreen.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="screen\MainScreen.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="ST7735Lcd.cpp">
@@ -230,10 +290,10 @@
     <Compile Include="Pwm.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="Scheduler.cpp">
+    <Compile Include="timer2.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="Scheduler.h">
+    <Compile Include="timer2.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Bluetooth.cpp">
@@ -245,6 +305,12 @@
     <Compile Include="utils.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="VoltageSelector.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="VoltageSelector.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="voltamp.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -252,6 +318,7 @@
   <ItemGroup>
     <Folder Include="lib" />
     <Folder Include="fonts" />
+    <Folder Include="screen" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>

@@ -1,10 +1,9 @@
 #ifndef RINGBUFFER_H_
 #define RINGBUFFER_H_
 
-#include <string.h>
 #include <stdint.h>
 
-template <size_t size, typename T = uint8_t>
+template <uint8_t size, typename T = uint8_t>
 class RingBuffer {
     private:
         T buffer[size];
@@ -20,29 +19,31 @@ class RingBuffer {
         }
 
         bool push(T item) {
-            if (count < size) {
-                buffer[tail] = item;
-                count++;
-                tail++;
-                if (tail == size) {
-                    tail = 0;
-                }
-                return true;
+            if (count == size) {
+                return false;
             }
-            return false;
+
+            buffer[tail] = item;
+            count++;
+            tail++;
+            if (tail == size) {
+                tail = 0;
+            }
+            return true;
         }
 
         bool pop(T &item) {
-            if (count > 0) {
-                item = buffer[head];
-                count--;
-                head++;
-                if (head == size) {
-                    head = 0;
-                }
-                return true;
+            if (count == 0) {
+                return false;
             }
-            return false;
+
+            item = buffer[head];
+            count--;
+            head++;
+            if (head == size) {
+                head = 0;
+            }
+            return true;
         }
 };
 

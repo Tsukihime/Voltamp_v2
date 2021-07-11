@@ -17,6 +17,24 @@ namespace bitmask {
 }
 
 template <typename T1, typename T2> inline T1 round_div(T1 numerator, T2 denominator) {return ((numerator + (denominator >> 1)) / denominator);}
+template <typename T1, typename T2> constexpr T1 c_round_div(T1 numerator, T2 denominator) {return ((numerator + (denominator >> 1)) / denominator);}
+
+template<class T>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi ) {
+    return (v < lo) ? lo : (hi < v) ? hi : v;
+}
+
+inline void bin2bcd10(uint32_t value, uint8_t buffer[10]) {
+    uint32_t subtrahend = 1000000000;
+    for (uint8_t i = 0; i < 10; i++) {
+        buffer[i] = 0;
+        while (value >= subtrahend) {
+            value -= subtrahend;
+            buffer[i]++;
+        }
+        subtrahend /= 10;
+    }
+}
 
 inline void bin2bcd5(uint16_t value, uint8_t buffer[5]) {
     buffer[0] = 0;
