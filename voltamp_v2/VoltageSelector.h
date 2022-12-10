@@ -6,7 +6,7 @@
 class VoltageSelector {
     public:
         static void initialize();
-        static void setBluetoothState(bool state);
+        static void setBluetoothATState(bool state);
         static void setCVLedState(bool state);
         static void setCCLedState(bool state);
         static void setVoltageLevel(uint8_t level);

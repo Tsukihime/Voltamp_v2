@@ -75,19 +75,19 @@ void processMeasure() {
     MainScreen::setVoltageLimit(PowerSupplier::getVoltage());
     MainScreen::setCurrentLimit(PowerSupplier::getCurrent());
 
-    printValue(voltage);
-    Bluetooth::sendString(" mV  ");
-    printValue(current);
-    Bluetooth::sendString(" mA  ");
+//    printValue(voltage);
+//    Bluetooth::sendString(" mV  ");
+//    printValue(current);
+//    Bluetooth::sendString(" mA  ");
 
-    Bluetooth::sendString("ADC A: ");
+    Bluetooth::sendString("aA:");
     printValue(Multimeter::getRawCurrent());
-    Bluetooth::sendString("  ADC V: ");
+    Bluetooth::sendString(" aV:");
     printValue(Multimeter::getRawVoltage());
 
-    Bluetooth::sendString("  DAC A: ");
+    Bluetooth::sendString(" dA:");
     printValue(PowerSupplier::getRawCurrent());
-    Bluetooth::sendString("  DAC V: ");
+    Bluetooth::sendString(" dV:");
     printValue(PowerSupplier::getRawVoltage());
 
     Bluetooth::sendString("\r\n");
@@ -125,8 +125,8 @@ void updateEncodersRotation() {
     int8_t voltage_clicks = Buttons::voltageEncoderPopDelta();
     int8_t current_clicks = Buttons::currentEncoderPopDelta();
 
-    int32_t voltage_delta = voltage_clicks * (voltageCoarse ? 500 : 10); // mv per click
-    int32_t current_delta = current_clicks * (currentCoarse ? 50 : 1); // ma per click
+    int32_t voltage_delta = voltage_clicks * (voltageCoarse ? 200 : 10); // mv per click
+    int32_t current_delta = current_clicks * (currentCoarse ? 100 : 1); // ma per click
     
     int32_t new_voltage = voltage + voltage_delta;
     int32_t new_current = current + current_delta;
@@ -155,16 +155,15 @@ int main(void) {
     ST7735Lcd::initialize();
     sei();
 
-    VoltageSelector::setBluetoothState(true);
+    VoltageSelector::setBluetoothATState(false);
 
     Scheduler::setTimer(printMCULoad, 1024, true);
     Scheduler::setTimer(updateEnergyCounter, 1024, true);
     Scheduler::setTimer(updateEncoders, 102, true);
     Scheduler::setTask(firstDraw);
 
-
     PowerSupplier::setCurrent(3000);
-    PowerSupplier::setVoltage(2200);
+    PowerSupplier::setVoltage(2000);
 
     Timer2::poolTasksRun();
-}
+}//14745600

@@ -24,7 +24,7 @@ void VoltageSelector::initialize() {
     SelectorReg::initialize();
 }
 
-void VoltageSelector::setBluetoothState(bool state){
+void VoltageSelector::setBluetoothATState(bool state){
     setPortBit(6, state);
     updatePort();
 }

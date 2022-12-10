@@ -94,7 +94,7 @@ void drawVoltageLabel(uint8_t chars[5], uint8_t old_chars[5], uint8_t x, uint8_t
     if(chars[0] != old_chars[0]) {
         if(chars[0] == 0) {
             ST7735Lcd::FillRectangle(x, y, 16, 24, BgColor);
-            } else {
+        } else {
             ST7735Lcd::DrawChar(chars[0], x, y, FgColor, BgColor, Font16x24);
         }
     }
@@ -113,7 +113,7 @@ void drawPowerLabel(uint8_t chars[5], uint8_t old_chars[5], uint8_t x, uint8_t y
     if(chars[0] != old_chars[0]) {
         if(chars[0] == 0) {
             ST7735Lcd::FillRectangle(x, y, 11, 16, BgColor);
-            } else {
+        } else {
             ST7735Lcd::DrawChar(chars[0], x, y, FgColor, BgColor, Font11x16);
         }
     }
@@ -187,10 +187,10 @@ void MainScreen::setAdjustmentLevel(bool voltageCoarse, bool currentCoarse) {
     if(currentCoarseAdjustment != currentCoarse) {
         if(currentCoarse) {
             ST7735Lcd::FillRectangle(143, 73, 11, 2, SCREEN_BACKGROUND);
-            ST7735Lcd::FillRectangle(115, 73, 25, 2, AJUSTMENT_COLOR);
+            ST7735Lcd::FillRectangle(115, 73, 11, 2, AJUSTMENT_COLOR);
         } else {
             ST7735Lcd::FillRectangle(143, 73, 11, 2, AJUSTMENT_COLOR);
-            ST7735Lcd::FillRectangle(115, 73, 25, 2, SCREEN_BACKGROUND);
+            ST7735Lcd::FillRectangle(115, 73, 11, 2, SCREEN_BACKGROUND);
         }
     }
 
