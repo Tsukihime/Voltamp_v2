@@ -29,7 +29,7 @@ void Multimeter::initialize() {
     bitmask::clear(DDRC, ADC_INPUTS);
     bitmask::clear(PORTC, ADC_INPUTS);
 
-    Adc::Init(0, Adc::Div64, Adc::External);
+    Adc::Init(0, Adc::Div128, Adc::External);
     Adc::EnableInterrupt();
     Adc::Enable();
 }
@@ -61,7 +61,7 @@ void measureAll() {
 }
 
 void onCompleteMeasure() {
-    Scheduler::setTimer(measureAll, 2); // small delay for RC filter do relax
+    Scheduler::setTimer(measureAll, 1); // small delay for RC filter do relax
 }
 
 void Multimeter::updateValues(TaskPointer onComplete) {
@@ -87,13 +87,13 @@ uint16_t Multimeter::getCurrent() {
 }
 
 void setDitherValue(uint16_t step) {
-    uint8_t value = step; // 255..127 > 127..0
+    uint8_t value = step;
 
-    if(step >= STEPS / 2) {      // 255..128 > 0..127
+    if(step >= STEPS / 2) {      // 128..64 > 0..63
         value = ~step;
     }
 
-    Pwm::SetDitherValue(value);
+    Pwm::SetDitherValue6Bit(value);
 }
 
 ISR(ADC_vect) {

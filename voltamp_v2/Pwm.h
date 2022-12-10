@@ -4,7 +4,7 @@
 class Pwm {
     public:
         static void initialize();
-        static void SetDitherValue(uint8_t value);
+        static void SetDitherValue6Bit(uint8_t value);
 };
 
 #endif /* PWM_H_ */

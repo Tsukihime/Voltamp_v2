@@ -18,7 +18,7 @@ const uint8_t TIMER1_PWM_PHASE_CORRECT_8BIT_A = ((0 << WGM11) | (1 << WGM10));
 const uint8_t TIMER1_PWM_PHASE_CORRECT_8BIT_B = ((0 << WGM13) | (0 << WGM12));
 const uint8_t TIMER1_PRESCALER_DIV1 = ((0 << CS12) | (0 << CS11) | (1 << CS10));
 const uint8_t TIMER1_NO_INTERRUPT = ((0 << ICIE1) | (0 << OCIE1B) | (0 << OCIE1A) | (0 << TOIE1));
-const uint8_t TIMER1_COUNTER_TOP = 0x003f;
+const uint8_t TIMER1_COUNTER_TOP = 0x003f; // 6bit resolution
 
 void Pwm::initialize() {
     bit::clear(PORTB, TIMER1_OUT);
@@ -31,9 +31,9 @@ void Pwm::initialize() {
     ICR1 = TIMER1_COUNTER_TOP;
     TCCR1A = TIMER1_COMPARE_OUTPUT_FAST_PWM_INV_CH_A | TIMER1_FAST_PWM_ICR_TOP_A;
     TCCR1B = TIMER1_FAST_PWM_ICR_TOP_B | TIMER1_PRESCALER_DIV1;
-    SetDitherValue(0);
+    SetDitherValue6Bit(0);
 }
 
-void Pwm::SetDitherValue(uint8_t value) {
+void Pwm::SetDitherValue6Bit(uint8_t value) { // 0..63 max
     OCR1AL = ~value & TIMER1_COUNTER_TOP;
 }

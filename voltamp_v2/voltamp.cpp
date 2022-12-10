@@ -157,13 +157,13 @@ int main(void) {
 
     VoltageSelector::setBluetoothATState(false);
 
-    Scheduler::setTimer(printMCULoad, 1024, true);
-    Scheduler::setTimer(updateEnergyCounter, 1024, true);
-    Scheduler::setTimer(updateEncoders, 102, true);
+    Scheduler::setTimer(printMCULoad, 100, true);
+    Scheduler::setTimer(updateEnergyCounter, 100, true);
+    Scheduler::setTimer(updateEncoders, 10, true);
     Scheduler::setTask(firstDraw);
 
     PowerSupplier::setCurrent(3000);
     PowerSupplier::setVoltage(2000);
 
     Timer2::poolTasksRun();
-}//14745600
+}
