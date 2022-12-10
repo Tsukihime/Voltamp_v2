@@ -11,6 +11,7 @@ struct CalibrationData {
     } PowerSupplier;
     struct {
         uint16_t V0;
+        uint16_t V0Offset;
         uint16_t A0;
         uint16_t V30;
         uint16_t A3;
@@ -19,14 +20,15 @@ struct CalibrationData {
 
 void Calibrator::initialize() {
     eeprom_read_block(&calibrationData, nullptr, sizeof(CalibrationData));
-    calibrationData.Multimeter.A0 = 861;
-    calibrationData.Multimeter.A3 = 52684;
+    calibrationData.Multimeter.A0 = 311;
+    calibrationData.Multimeter.A3 = 60270;
     calibrationData.Multimeter.V0 = 0;
-    calibrationData.Multimeter.V30 = 59480;
-    calibrationData.PowerSupplier.A0 = 67;
-    calibrationData.PowerSupplier.A3 = 4095;
-    calibrationData.PowerSupplier.V0 = 0;
-    calibrationData.PowerSupplier.V30 = 3830;
+    calibrationData.Multimeter.V0Offset = 60;
+    calibrationData.Multimeter.V30 = 59385;
+    calibrationData.PowerSupplier.A0 = 57;
+    calibrationData.PowerSupplier.A3 = 4008;
+    calibrationData.PowerSupplier.V0 = 32;
+    calibrationData.PowerSupplier.V30 = 3855;
 }
 
 void Calibrator::save() {
@@ -43,7 +45,7 @@ uint16_t remap(uint16_t value, uint16_t oldMin, uint16_t oldMax, uint16_t newMin
 }
 
 uint16_t Calibrator::normalizeMultimeterVoltage(uint16_t voltage) {
-    return remap(voltage, calibrationData.Multimeter.V0, calibrationData.Multimeter.V30, 0, 30000);
+    return remap(voltage, calibrationData.Multimeter.V0, calibrationData.Multimeter.V30, calibrationData.Multimeter.V0Offset, 30000);
 }
 
 uint16_t Calibrator::normalizeMultimeterCurrent(uint16_t current) {
