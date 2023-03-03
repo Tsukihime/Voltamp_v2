@@ -75,11 +75,6 @@ void processMeasure() {
     MainScreen::setVoltageLimit(PowerSupplier::getVoltage());
     MainScreen::setCurrentLimit(PowerSupplier::getCurrent());
 
-//    printValue(voltage);
-//    Bluetooth::sendString(" mV  ");
-//    printValue(current);
-//    Bluetooth::sendString(" mA  ");
-
     Bluetooth::sendString("aA:");
     printValue(Multimeter::getRawCurrent());
     Bluetooth::sendString(" aV:");
