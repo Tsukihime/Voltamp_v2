@@ -59,15 +59,15 @@ void updateEnergyCounter() {
     energyMicroWattHour += static_cast<uint32_t>(voltage) * current / 3600;
 }
 
-static bool voltageCoarse = true;
-static bool currentCoarse = true;
+static AdjustmentLevel voltageAdjustment = AdjustmentLevel::COARSE;
+static AdjustmentLevel currentAdjustment = AdjustmentLevel::COARSE;
 
 void processMeasure() {
     uint16_t voltage = Multimeter::getVoltage();
     uint16_t current = Multimeter::getCurrent();
     uint32_t power = static_cast<uint32_t>(voltage) * current / 1000;
 
-    MainScreen::setAdjustmentLevel(voltageCoarse, currentCoarse);
+    MainScreen::setAdjustmentLevel(voltageAdjustment, currentAdjustment);
     MainScreen::setVoltage(voltage);
     MainScreen::setCurrent(current);
     MainScreen::setPower(power);
@@ -103,11 +103,17 @@ void updateEncoderButtons() {
     static bool currentDown = false;
 
     if(voltageDown & !Buttons::isVoltageEncoderPressed()) { // voltage click
-        voltageCoarse = !voltageCoarse;
+        voltageAdjustment = (AdjustmentLevel)(voltageAdjustment + 1);
+        if(voltageAdjustment >= AdjustmentLevel::END) {
+            voltageAdjustment = AdjustmentLevel::COARSE;
+        }
     }
 
     if(currentDown & !Buttons::isCurrentEncoderPressed()) { // current click
-        currentCoarse = !currentCoarse;
+        currentAdjustment = (AdjustmentLevel)(currentAdjustment + 1);
+        if(currentAdjustment >= AdjustmentLevel::END) {
+            currentAdjustment = AdjustmentLevel::COARSE;
+        }
     }
 
     voltageDown = Buttons::isVoltageEncoderPressed();
@@ -115,13 +121,16 @@ void updateEncoderButtons() {
 }
 
 void updateEncodersRotation() {
+    const uint8_t DV[3] = {200, 10, 0};
+    const uint8_t DA[3] = {100, 1, 0};
+
     int32_t voltage = PowerSupplier::getVoltage();
     int32_t current = PowerSupplier::getCurrent();
     int8_t voltage_clicks = Buttons::voltageEncoderPopDelta();
     int8_t current_clicks = Buttons::currentEncoderPopDelta();
 
-    int32_t voltage_delta = voltage_clicks * (voltageCoarse ? 200 : 10); // mv per click
-    int32_t current_delta = current_clicks * (currentCoarse ? 100 : 1); // ma per click
+    int32_t voltage_delta = voltage_clicks * DV[voltageAdjustment]; // mv per click
+    int32_t current_delta = current_clicks * DA[currentAdjustment]; // ma per click
     
     int32_t new_voltage = voltage + voltage_delta;
     int32_t new_current = current + current_delta;
@@ -144,7 +153,7 @@ int main(void) {
     VoltageSelector::initialize();
     PowerSupplier::initialize();
     Bluetooth::initialize();
-    Multimeter::initialize();    
+    Multimeter::initialize();
     Timer2::initialize();
     Calibrator::initialize();
     ST7735Lcd::initialize();

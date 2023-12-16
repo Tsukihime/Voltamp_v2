@@ -1,6 +1,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <stdint.h>
+
 namespace bit {
     template <typename T1, typename T2> inline void set  (T1 &variable, T2 bit) {variable |=  ((T1)1 << bit);}
     template <typename T1, typename T2> inline void clear(T1 &variable, T2 bit) {variable &= ~((T1)1 << bit);}
@@ -70,5 +72,7 @@ inline void bcd2ascii(uint8_t ints[5]) {
         ints[i] += '0';
     }
 }
+
+uint8_t int32ToStrFixedPoint(int32_t value, char buffer[13], uint8_t point_position = 0);
 
 #endif /* UTILS_H_ */
