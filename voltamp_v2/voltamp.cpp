@@ -13,7 +13,7 @@
 #include "Timer2.h"
 #include "ST7735Lcd.h"
 #include "screen/MainScreen.h"
-#include "Calibrator.h"
+#include "Settings.h"
 
 void printValue(uint16_t value) {
     uint8_t digits[5];
@@ -107,6 +107,7 @@ void updateEncoderButtons() {
         if(voltageAdjustment >= AdjustmentLevel::END) {
             voltageAdjustment = AdjustmentLevel::COARSE;
         }
+        Settings::setVoltageAdjustment(voltageAdjustment);
     }
 
     if(currentDown & !Buttons::isCurrentEncoderPressed()) { // current click
@@ -114,37 +115,46 @@ void updateEncoderButtons() {
         if(currentAdjustment >= AdjustmentLevel::END) {
             currentAdjustment = AdjustmentLevel::COARSE;
         }
+        Settings::setCurrentAdjustment(currentAdjustment);
     }
 
     voltageDown = Buttons::isVoltageEncoderPressed();
     currentDown = Buttons::isCurrentEncoderPressed();
 }
 
-void updateEncodersRotation() {
+void updateEncodersRotation(int8_t voltage_clicks, int8_t current_clicks) {
+    if(voltage_clicks == 0 && current_clicks == 0) {
+        return;
+    }
+
     const uint8_t DV[3] = {200, 10, 0};
     const uint8_t DA[3] = {100, 1, 0};
-
-    int32_t voltage = PowerSupplier::getVoltage();
-    int32_t current = PowerSupplier::getCurrent();
-    int8_t voltage_clicks = Buttons::voltageEncoderPopDelta();
-    int8_t current_clicks = Buttons::currentEncoderPopDelta();
 
     int32_t voltage_delta = voltage_clicks * DV[voltageAdjustment]; // mv per click
     int32_t current_delta = current_clicks * DA[currentAdjustment]; // ma per click
     
-    int32_t new_voltage = voltage + voltage_delta;
-    int32_t new_current = current + current_delta;
+    int32_t new_voltage = PowerSupplier::getVoltage() + voltage_delta;
+    int32_t new_current = PowerSupplier::getCurrent() + current_delta;
 
     new_voltage = clamp(new_voltage, 0L, 30000L);
     new_current = clamp(new_current, 0L, 3000L);
 
     PowerSupplier::setCurrent(new_current);
     PowerSupplier::setVoltage(new_voltage);
+    Settings::setCurrent(new_current);
+    Settings::setVoltage(new_voltage);
 }
 
 void updateEncoders() {
     updateEncoderButtons();
-    updateEncodersRotation();
+
+    int8_t voltage_clicks = Buttons::voltageEncoderPopDelta();
+    int8_t current_clicks = Buttons::currentEncoderPopDelta();
+    updateEncodersRotation(voltage_clicks, current_clicks);
+}
+
+void updateSettings() {
+    Settings::save();
 }
 
 int main(void) {
@@ -155,7 +165,7 @@ int main(void) {
     Bluetooth::initialize();
     Multimeter::initialize();
     Timer2::initialize();
-    Calibrator::initialize();
+    Settings::initialize();
     ST7735Lcd::initialize();
     sei();
 
@@ -165,9 +175,12 @@ int main(void) {
     Scheduler::setTimer(updateEnergyCounter, 100, true);
     Scheduler::setTimer(updateEncoders, 10, true);
     Scheduler::setTask(firstDraw);
+    Scheduler::setTimer(updateSettings, 1000, true);
 
-    PowerSupplier::setCurrent(3000);
-    PowerSupplier::setVoltage(2000);
+    PowerSupplier::setCurrent(Settings::getCurrent());
+    PowerSupplier::setVoltage(Settings::getVoltage());
+    currentAdjustment = Settings::getCurrentAdjustment();
+    voltageAdjustment = Settings::getVoltageAdjustment();
 
     Timer2::poolTasksRun();
 }

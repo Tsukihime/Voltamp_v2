@@ -2,7 +2,7 @@
 
 #include "VoltageSelector.h"
 #include "Dac.h"
-#include "Calibrator.h"
+#include "Settings.h"
 
 uint16_t PowerSupplier::voltage_mv = 0;
 uint16_t PowerSupplier::current_ma = 0;
@@ -49,8 +49,8 @@ void PowerSupplier::setDacValues() {
         VoltageSelector::setVoltageLevel(3);
     }
 
-    voltageDacValue = Calibrator::normalizePowerSupplierVoltage(voltage_mv);
-    currentDacValue = Calibrator::normalizePowerSupplierCurrent(current_ma);
+    voltageDacValue = Settings::normalizePowerSupplierVoltage(voltage_mv);
+    currentDacValue = Settings::normalizePowerSupplierCurrent(current_ma);
 
     Dac::setValues(voltageDacValue, currentDacValue);
 }

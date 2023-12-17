@@ -6,7 +6,7 @@
 #include "Multimeter.h"
 #include "utils.h"
 #include "Pwm.h"
-#include "Calibrator.h"
+#include "Settings.h"
 
 uint32_t adc_accumulator;
 uint16_t adc_counter;
@@ -75,7 +75,7 @@ uint16_t Multimeter::getRawVoltage() {
 }
 
 uint16_t Multimeter::getVoltage() {
-   return Calibrator::normalizeMultimeterVoltage(voltage);
+   return Settings::normalizeMultimeterVoltage(voltage);
 }
 
 uint16_t Multimeter::getRawCurrent() {
@@ -83,7 +83,7 @@ uint16_t Multimeter::getRawCurrent() {
 }
 
 uint16_t Multimeter::getCurrent() {
-    return Calibrator::normalizeMultimeterCurrent(current);
+    return Settings::normalizeMultimeterCurrent(current);
 }
 
 void setDitherValue(uint16_t step) {
