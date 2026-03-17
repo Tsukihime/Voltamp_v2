@@ -124,7 +124,8 @@ void updateEncoderButtons() {
 
 void updateEncodersRotation(int8_t voltage_clicks, int8_t current_clicks) {
     if(voltage_clicks == 0 && current_clicks == 0) {
-        return;
+        //return;
+        // обновляем каждый раз - это защита против сбоев
     }
 
     const uint8_t DV[3] = {200, 10, 0};
